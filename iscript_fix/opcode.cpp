@@ -36,7 +36,7 @@ struct
 	{ 1 },
 	{ -1 },  // Variable-length
 	{ 1 },
-	{ 4 },
+	{ 4, 2 },
 	{ 2 },
 	{ 2 },
 	{ 1 },
@@ -77,15 +77,13 @@ struct
 	{ 1 },
 };
 
-Opcode* GetOpcode(std::istream& is)
+void GetOpcode(std::istream& is, Opcode* opc)
 {
-	Opcode* opc = new Opcode;
 	memset(opc, 0, sizeof(Opcode));
 
 	opc->parent = nullptr;
 	opc->prev = nullptr;
 	opc->next = nullptr;
-	opc->allocated_offset = 0xFFFF;
 
 
 	// Get opcode type
@@ -133,6 +131,4 @@ Opcode* GetOpcode(std::istream& is)
 	{
 		opc->pointer.ptr = nullptr;
 	}
-
-	return opc;
 }

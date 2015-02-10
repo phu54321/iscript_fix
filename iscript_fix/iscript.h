@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include <map>
+#include <set>
 #include <vector>
 #include <istream>
 
@@ -17,13 +18,22 @@ struct IScriptEntry
 	std::vector<Opcode*> opcodelist;
 };
 
+struct IScriptDependency
+{
+	std::set<Opcode*> opcSet;
+	std::set<OpcodeChunk*> chkSet;
+};
+
 class IScript
 {
 public:
 	IScript(std::istream& is);
 	~IScript();
 
-	const IScriptEntry* GetEntry(uint16_t entryID);
+	std::vector<uint16_t> EnumEntries() const;
+	IScriptEntry* GetEntry(uint16_t entryID);
+	const IScriptEntry* GetEntry(uint16_t entryID) const;
+	void UpdateDependency(uint16_t entryID, IScriptDependency* isd) const;
 
 private:
 	std::map<uint16_t, IScriptEntry*> _entries;

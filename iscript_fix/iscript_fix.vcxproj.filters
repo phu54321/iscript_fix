@@ -4,9 +4,15 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="iscript.cpp" />
     <ClCompile Include="opcode.cpp" />
+    <ClCompile Include="memorypool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iscript_opcode.h" />
     <ClInclude Include="iscript.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="memorypool.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
 </Project>

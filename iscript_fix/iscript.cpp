@@ -1,6 +1,9 @@
 #include <cassert>
 #include <cstdio>
 #include <stack>
+#include <set>
+
+#include <fstream>
 
 #include "iscript.h"
 
@@ -22,7 +25,7 @@ std::map<uint32_t, uint32_t> entryType_opcodeNum_map = {
 	{ 29, 28 },
 };
 
-Opcode* GetOpcode(std::istream& is);
+void GetOpcode(std::istream& is, Opcode* opc);
 
 IScript::IScript(std::istream& is)
 {
@@ -109,9 +112,9 @@ IScript::IScript(std::istream& is)
 		if(opcodeMap[opcodeOffset]->size != 0xFFFF)  // Already parsed.
 			continue;
 
+		Opcode* opc = opcodeMap[opcodeOffset];
 		is.seekg(opcodeOffset);
-		Opcode* opc = GetOpcode(is);
-		opcodeMap[opcodeOffset] = opc;
+		GetOpcode(is, opc);
 		if(opc->pointer.ptr != nullptr)  // Pointer detected
 		{
 			uint16_t pOpcOffset = reinterpret_cast<uint16_t>(opc->pointer.ptr);
@@ -121,7 +124,7 @@ IScript::IScript(std::istream& is)
 			opcodeParseStartOffsets.push(pOpcOffset);
 		}
 
-		// Queue parse of following opcode.
+		// Queue parse of next opcode.
 		uint8_t opcodeType = opc->plaindata[0];
 		if(!(
 			opcodeType == 0x07 ||  // goto
@@ -197,11 +200,70 @@ IScript::IScript(std::istream& is)
 			chk = nullptr;
 		}
 		
-		off += opcodeMap[off]->size;
+		off += opc->size;
+	}
+
+	for(int off = 0; off < 65536; off++)
+	{
+		Opcode* opc = opcodeMap[off];
 	}
 
 	printf("Iscript reading complete!\n");
 	printf(" - Total number of iscript chunks : %d\n", chkn);
 }
 
-IScript::~IScript() {}
+IScriptEntry* IScript::GetEntry(uint16_t entryID)
+{
+	return _entries[entryID];
+}
+
+const IScriptEntry* IScript::GetEntry(uint16_t entryID) const
+{
+	return _entries.find(entryID)->second;
+}
+
+std::vector<uint16_t> IScript::EnumEntries() const
+{
+	std::vector<uint16_t> entryIDSet;
+	for(auto& it : _entries) entryIDSet.push_back(it.first);
+	return entryIDSet;
+}
+
+void IScript::UpdateDependency(uint16_t entryID, IScriptDependency* isd) const
+{
+	std::stack<Opcode*> opcStack;
+	const IScriptEntry* entry = GetEntry(entryID);
+	for(Opcode* opcode : entry->opcodelist)
+	{
+		opcStack.push(opcode);
+	}
+
+	while(!opcStack.empty())
+	{
+		Opcode* opcode = opcStack.top();
+		opcStack.pop();
+		if(opcode == nullptr) continue;
+		else if(isd->opcSet.find(opcode) != isd->opcSet.end()) continue;
+
+		opcStack.push(opcode->next);
+		opcStack.push(opcode->pointer.ptr);
+
+		isd->opcSet.insert(opcode);
+		isd->chkSet.insert(opcode->parent);
+	}
+}
+
+IScript::~IScript()
+{
+	IScriptDependency isd;
+
+	// Collect opcodes & chunks
+	for(auto& it : _entries)
+	{
+		UpdateDependency(it.first, &isd);
+		delete it.second;
+	}
+
+	for(Opcode* opc : isd.opcSet) delete opc;
+	for(OpcodeChunk* opcChk : isd.chkSet) delete opcChk;
+}

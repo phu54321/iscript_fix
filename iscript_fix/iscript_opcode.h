@@ -8,8 +8,9 @@ Opcode structure for iscript.
 #define ISCIRPT_OPCODE_HEADER_
 
 #include <cstdint>
-#include <cstdio>
 #include <vector>
+
+#include "memorypool.h"
 
 /*
 Every iscript opcode consists of
@@ -35,7 +36,7 @@ struct PtrArg  // Reference to other pointer
 	// length of file offset is always 2byte.
 };
 
-struct Opcode
+struct Opcode : public MemoryPooled
 {
 	OpcodeChunk* parent;
 
